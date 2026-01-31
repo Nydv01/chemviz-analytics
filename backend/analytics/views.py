@@ -18,7 +18,7 @@ Design goals:
 import os
 import logging
 from typing import Optional
-
+from pathlib import Path
 from django.conf import settings
 from django.http import (
     FileResponse,
@@ -27,7 +27,7 @@ from django.http import (
 )
 from django.utils.encoding import iri_to_uri
 from django.utils.timezone import now
-
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -298,6 +298,8 @@ class UploadHistoryView(APIView):
 # =====================================================================
 
 class PDFReportView(APIView):
+    authentication_classes = []      
+    permission_classes = [AllowAny] 
     """
     GET /api/report/<dataset_id>/
 
