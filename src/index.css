@@ -1,0 +1,457 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+@layer base {
+  :root {
+    /* Apple-inspired Premium Color Palette */
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    
+    --primary: 215 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 20% 20%;
+    
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
+    
+    --accent: 215 90% 95%;
+    --accent-foreground: 215 100% 40%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 72% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --info: 200 85% 50%;
+    --info-foreground: 0 0% 100%;
+    
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 215 100% 50%;
+    
+    --radius: 0.75rem;
+    
+    /* Sidebar - Deep, rich dark */
+    --sidebar: 220 25% 12%;
+    --sidebar-background: 220 30% 6%;
+--sidebar-foreground: 220 10% 90%;
+--sidebar-border: 220 25% 15%;
+--sidebar-primary: 215 100% 55%;
+--sidebar-primary-foreground: 0 0% 100%;
+--sidebar-accent: 220 25% 12%;
+--sidebar-accent-foreground: 220 10% 90%;
+
+
+    
+    /* Chart colors - vibrant gradient palette */
+    --chart-1: 215 100% 50%;
+    --chart-2: 180 65% 45%;
+    --chart-3: 142 72% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 280 70% 55%;
+    
+    /* Table */
+    --table-header: 220 15% 96%;
+    --table-row-hover: 220 15% 97%;
+    --table-row-alt: 220 10% 98%;
+  }
+
+  .dark {
+    --background: 220 25% 8%;
+    --foreground: 220 10% 95%;
+    
+    --card: 220 25% 12%;
+    --card-foreground: 220 10% 95%;
+    
+    --popover: 220 25% 10%;
+    --popover-foreground: 220 10% 95%;
+    
+    --primary: 215 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 220 10% 85%;
+    
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 10% 55%;
+    
+    --accent: 215 50% 20%;
+    --accent-foreground: 215 100% 70%;
+    
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 72% 50%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 0%;
+    
+    --info: 200 85% 55%;
+    --info-foreground: 0 0% 100%;
+    
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 215 100% 55%;
+    
+    --sidebar: 220 30% 6%;
+    --sidebar-background: 220 30% 6%;
+--sidebar-foreground: 220 10% 90%;
+--sidebar-border: 220 25% 15%;
+--sidebar-primary: 215 100% 55%;
+--sidebar-primary-foreground: 0 0% 100%;
+--sidebar-accent: 220 25% 12%;
+--sidebar-accent-foreground: 220 10% 90%;
+
+
+
+    
+    --table-header: 220 25% 15%;
+    --table-row-hover: 220 20% 14%;
+    --table-row-alt: 220 25% 11%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+    transition: background-color 0.2s;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}
+
+@layer components {
+  /* Glassmorphism cards */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl;
+    box-shadow: 
+      0 4px 24px -4px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+  
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+  
+  .glass-card-hover:hover {
+    @apply border-primary/30;
+    box-shadow: 
+      0 8px 40px -8px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+      0 0 60px -20px hsl(var(--primary) / 0.15);
+    transform: translateY(-2px);
+  }
+  
+  /* Premium stat cards */
+  .stat-card {
+    @apply glass-card-hover p-6 relative overflow-hidden;
+  }
+  
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.05) 0%,
+      transparent 50%
+    );
+  }
+  
+  .stat-card:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Chart container */
+  .chart-container {
+    @apply glass-card p-6;
+  }
+  
+  /* Data card with subtle elevation */
+  .data-card {
+    @apply glass-card p-6;
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--primary)) 100%
+    );
+  }
+  
+  .gradient-text-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--chart-2)) 100%
+    );
+  }
+  
+  /* Premium data table */
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
+  
+  .data-table th {
+    @apply py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50;
+  }
+  
+  .data-table th:first-child {
+    @apply rounded-tl-lg;
+  }
+  
+  .data-table th:last-child {
+    @apply rounded-tr-lg;
+  }
+  
+  .data-table td {
+    @apply py-4 px-4 text-sm text-foreground border-t border-border/50;
+  }
+  
+  .data-table tbody tr {
+    @apply transition-colors duration-200;
+  }
+  
+  .data-table tbody tr:hover {
+    @apply bg-accent/50;
+  }
+  
+  /* Upload dropzone premium */
+  .upload-zone {
+    @apply glass-card border-2 border-dashed border-border/50 p-12 text-center;
+    @apply transition-all duration-300 cursor-pointer;
+  }
+  
+  .upload-zone:hover,
+  .upload-zone.active,
+  .upload-zone.drag-active {
+    @apply border-primary/50 bg-primary/5;
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Status badges */
+  .status-success {
+    @apply bg-success/10 text-[hsl(var(--success))] border-[hsl(var(--success))]/20;
+  }
+  
+  .status-warning {
+    @apply bg-warning/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20;
+  }
+  
+  .status-error {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  
+  .status-info {
+    @apply bg-info/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/20;
+  }
+  
+  /* Animated gradient border */
+  .gradient-border {
+    @apply relative;
+  }
+  
+  .gradient-border::before {
+    content: '';
+    @apply absolute -inset-[1px] rounded-[inherit] -z-10;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(var(--chart-2)),
+      hsl(var(--chart-3)),
+      hsl(var(--primary))
+    );
+    background-size: 300% 300%;
+    animation: gradient-shift 6s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  
+  /* Pulse animation for live data */
+  .pulse-dot {
+    @apply relative;
+  }
+  
+  .pulse-dot::after {
+    content: '';
+    @apply absolute top-0 right-0 w-2 h-2 bg-success rounded-full;
+    animation: pulse-ring 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0; }
+  }
+  
+  /* Number counter animation */
+  .animate-number {
+    animation: number-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  @keyframes number-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Shimmer loading effect */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+  
+  .shimmer::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  /* Page transition */
+  .page-enter {
+    animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  
+  @keyframes page-enter {
+    0% { 
+      opacity: 0; 
+      transform: translateY(20px) scale(0.98);
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* Icon container with gradient */
+  .icon-container {
+    @apply flex items-center justify-center rounded-xl;
+    @apply bg-gradient-to-br from-primary/20 to-primary/5;
+    @apply text-primary;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSubtle 2s ease-in-out infinite;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulseSubtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  .animate-in-view {
+    animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    opacity: 0;
+  }
+  
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Stagger children animation delays */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
