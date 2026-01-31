@@ -1,0 +1,4 @@
+Equipment Name,Equipment Type,Flowrate,Pressure,Temperature
+Reactor-R1,reactor,80,6.5,180
+Reactor-R2,reactor,75,6.8,190
+Valve-V1,valve,40,5.2,90

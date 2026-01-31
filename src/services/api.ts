@@ -1,3 +1,4 @@
+
 import type {
   EquipmentDataset,
   EquipmentDatasetDetail,
@@ -9,234 +10,271 @@ import type {
   EquipmentRecord,
 } from "@/types/equipment"
 
-/* ===================== Configuration ===================== */
+export type AnalyticsAPI = {
+  uploadCSV: (file: File) => Promise<UploadResponse>
+  getHistory: () => Promise<HistoryResponse>
+  getSummary: (id: number) => Promise<DatasetSummary>
+  getDataset: (id: number) => Promise<EquipmentDatasetDetail>
+  deleteDataset: (id: number) => Promise<void>
+  getReportUrl: (id: number) => string
+}
+
+
+/* ===================== CONFIG ===================== */
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
 
-/* ===================== Base Helpers ===================== */
+const DEMO_STORAGE_KEY = "chemviz_demo_store"
+const API_MODE_KEY = "chemviz_api_mode" // backend | demo
 
-const baseFetchOptions: RequestInit = {
-  credentials: "include",
-  headers: {
-    "Content-Type": "application/json",
-  },
-}
+/* ===================== CSRF ===================== */
 
 function getCSRFToken(): string | null {
   const match = document.cookie.match(/csrftoken=([^;]+)/)
   return match ? match[1] : null
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let message = "Request failed"
-    try {
-      const data = await response.json()
-      message = data?.error || data?.detail || data?.message || message
-    } catch (error) {
-      // Ignore JSON parse errors
-    }
-    throw new Error(message)
-  }
+/* ===================== CORE FETCH ===================== */
 
-  if (response.status === 204) return {} as T
-  return response.json()
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let msg = "Request failed"
+    try {
+      const data = await res.json()
+      msg = data?.error || data?.detail || msg
+    } catch {
+      // Silently ignore JSON parse errors
+    }
+    throw new Error(msg)
+  }
+  return res.status === 204 ? ({} as T) : res.json()
 }
 
-async function apiRequest<T>(
+async function api<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const csrfToken = getCSRFToken()
+  const csrf = getCSRFToken()
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...baseFetchOptions,
-    ...options,
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    credentials: "include",
     headers: {
-      ...baseFetchOptions.headers,
-      ...options.headers,
-      ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+      ...(options.headers ?? {}),
+      ...(csrf ? { "X-CSRFToken": csrf } : {}),
     },
+    ...options,
   })
 
-  return handleResponse<T>(response)
+  return handleResponse<T>(res)
 }
 
-/* ===================== Auth API ===================== */
+/* ===================== AUTH API ===================== */
 
 export const authAPI = {
   login: (username: string, password: string) =>
-    apiRequest<AuthResponse>("/auth/login/", {
+    api<AuthResponse>("/auth/login/", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     }),
 
   logout: () =>
-    apiRequest<{ message: string }>("/auth/logout/", { method: "POST" }),
+    api<{ message: string }>("/auth/logout/", { method: "POST" }),
 
   getCurrentUser: () =>
-    apiRequest<{ user: User; isAuthenticated: boolean }>("/auth/me/"),
+    api<{ user: User; isAuthenticated: boolean }>("/auth/me/"),
 }
 
-/* ===================== Analytics API CONTRACT ===================== */
-
-export type AnalyticsAPI = {
-  uploadCSV: (file: File) => Promise<UploadResponse>
-  getHistory: () => Promise<HistoryResponse>
-  getSummary: (id: number) => Promise<DatasetSummary>
-  getDataset: (id: number) => Promise<EquipmentDatasetDetail>
-  deleteDataset?: (id: number) => Promise<void>
-  getReportUrl?: (id: number) => string
-}
-
-/* ===================== Backend Analytics API ===================== */
+/* ===================== BACKEND ANALYTICS ===================== */
 
 export const analyticsAPI: AnalyticsAPI = {
+
   uploadCSV: async (file: File): Promise<UploadResponse> => {
-    const formData = new FormData()
-    formData.append("file", file)
+    const form = new FormData()
+    form.append("file", file)
 
-    const csrfToken = getCSRFToken()
+    const csrf = getCSRFToken()
 
-    const response = await fetch(`${API_BASE_URL}/upload/`, {
+    const res = await fetch(`${API_BASE_URL}/upload/`, {
       method: "POST",
       credentials: "include",
-      headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
-      body: formData,
+      headers: csrf ? { "X-CSRFToken": csrf } : {},
+      body: form,
     })
 
-    return handleResponse<UploadResponse>(response)
+    localStorage.setItem(API_MODE_KEY, "backend")
+    return handleResponse(res)
   },
 
-  getHistory: () => apiRequest<HistoryResponse>("/history/"),
+  getHistory: () =>
+    api<HistoryResponse>("/history/"),
 
   getSummary: (id: number) =>
-    apiRequest<DatasetSummary>(`/summary/${id}/`),
+    api<DatasetSummary>(`/summary/${id}/`),
 
   getDataset: (id: number) =>
-    apiRequest<EquipmentDatasetDetail>(`/dataset/${id}/`),
+    api<EquipmentDatasetDetail>(`/dataset/${id}/`),
 
   deleteDataset: (id: number) =>
-    apiRequest<void>(`/dataset/${id}/`, { method: "DELETE" }),
+    api<void>(`/dataset/${id}/`, { method: "DELETE" }),
 
-  getReportUrl: (id: number) =>
-    `${API_BASE_URL}/report/${id}/`,
+  getReportUrl: (id: number) => {
+  return `${import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"}/api/report/${id}/`
+},
+
+
 }
 
-/* ===================== MOCK DATA ===================== */
+/* ===================== DEMO STORE (PERSISTENT) ===================== */
 
-const mockDatasets: EquipmentDataset[] = [
-  {
-    id: 1,
-    filename: "equipment_batch_001.csv",
-    uploaded_at: new Date().toISOString(),
-    total_records: 12,
-    avg_flowrate: 120.4,
-    avg_pressure: 3.1,
-    avg_temperature: 46.8,
-  },
-]
-
-function generateMockRecords(): EquipmentRecord[] {
-  const types = ["pump", "valve", "reactor", "compressor"]
-
-  return Array.from({ length: 12 }).map((_, i) => ({
-    id: i + 1,
-    name: `EQ-${100 + i}`,
-    equipment_type: types[i % types.length],
-    flowrate: 80 + Math.random() * 120,
-    pressure: 1.5 + Math.random() * 6,
-    temperature: 25 + Math.random() * 70,
-  }))
+type DemoStore = {
+  datasets: EquipmentDataset[]
+  records: Record<number, EquipmentRecord[]>
 }
 
-/* ===================== MOCK ANALYTICS API (FULL MATCH) ===================== */
+function loadDemoStore(): DemoStore {
+  const raw = localStorage.getItem(DEMO_STORAGE_KEY)
+  return raw ? JSON.parse(raw) : { datasets: [], records: {} }
+}
 
-export const mockAPI: AnalyticsAPI = {
+function saveDemoStore(store: DemoStore) {
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(store))
+}
+
+/* ===================== CSV PARSER ===================== */
+
+function parseCSV(text: string): EquipmentRecord[] {
+  const lines = text.trim().split("\n").slice(1)
+
+  return lines.map((line, i) => {
+    const [name, type, flow, pressure, temp] = line.split(",")
+
+    return {
+      id: i + 1,
+      name: name.trim(),
+      equipment_type: type.trim(),
+      flowrate: Number(flow),
+      pressure: Number(pressure),
+      temperature: Number(temp),
+    }
+  })
+}
+
+/* ===================== STATS ===================== */
+
+const avg = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length
+const std = (a: number[]) => {
+  const m = avg(a)
+  return Math.sqrt(avg(a.map(x => (x - m) ** 2)))
+}
+
+function computeSummary(
+  dataset: EquipmentDataset,
+  records: EquipmentRecord[]
+): DatasetSummary {
+  const f = records.map(r => r.flowrate)
+  const p = records.map(r => r.pressure)
+  const t = records.map(r => r.temperature)
+
+  return {
+    dataset_id: dataset.id,
+    filename: dataset.filename,
+    uploaded_at: dataset.uploaded_at,
+    total_equipment: records.length,
+
+    avg_flowrate: avg(f),
+    avg_pressure: avg(p),
+    avg_temperature: avg(t),
+
+    min_flowrate: Math.min(...f),
+    max_flowrate: Math.max(...f),
+    min_pressure: Math.min(...p),
+    max_pressure: Math.max(...p),
+    min_temperature: Math.min(...t),
+    max_temperature: Math.max(...t),
+
+    std_flowrate: std(f),
+    std_pressure: std(p),
+    std_temperature: std(t),
+
+    type_distribution: records.reduce((acc, r) => {
+      acc[r.equipment_type] = (acc[r.equipment_type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>),
+  }
+}
+
+/* ===================== DEMO ANALYTICS API ===================== */
+
+export const mockAPI = {
   async uploadCSV(file: File): Promise<UploadResponse> {
-    await new Promise((r) => setTimeout(r, 800))
+    const text = await file.text()
+    const records = parseCSV(text)
+    const store = loadDemoStore()
+
+    const id = Date.now()
 
     const dataset: EquipmentDataset = {
-      id: Date.now(),
+      id,
       filename: file.name,
       uploaded_at: new Date().toISOString(),
-      total_records: 12,
-      avg_flowrate: 118.7,
-      avg_pressure: 3.4,
-      avg_temperature: 44.9,
+      total_records: records.length,
+      avg_flowrate: 0,
+      avg_pressure: 0,
+      avg_temperature: 0,
     }
 
-    mockDatasets.unshift(dataset)
+    const summary = computeSummary(dataset, records)
+
+    dataset.avg_flowrate = summary.avg_flowrate
+    dataset.avg_pressure = summary.avg_pressure
+    dataset.avg_temperature = summary.avg_temperature
+
+    store.datasets.unshift(dataset)
+    store.records[id] = records
+
+    saveDemoStore(store)
+    localStorage.setItem(API_MODE_KEY, "demo")
 
     return {
       message: "Upload successful (Demo Mode)",
       dataset,
-      records_processed: dataset.total_records,
-      summary: {
-        total_equipment: dataset.total_records,
-        avg_flowrate: dataset.avg_flowrate!,
-        avg_pressure: dataset.avg_pressure!,
-        avg_temperature: dataset.avg_temperature!,
-        type_distribution: {
-          pump: 4,
-          valve: 3,
-          reactor: 3,
-          compressor: 2,
-        },
-      },
+      records_processed: records.length,
+      summary,
     }
   },
 
   async getHistory(): Promise<HistoryResponse> {
-    return { count: mockDatasets.length, datasets: mockDatasets }
+    const store = loadDemoStore()
+    return { count: store.datasets.length, datasets: store.datasets }
   },
 
   async getSummary(id: number): Promise<DatasetSummary> {
-    const d = mockDatasets.find((x) => x.id === id)!
-    return {
-      dataset_id: id,
-      filename: d.filename,
-      uploaded_at: d.uploaded_at,
-      total_equipment: d.total_records,
-      avg_flowrate: d.avg_flowrate!,
-      avg_pressure: d.avg_pressure!,
-      avg_temperature: d.avg_temperature!,
-      min_flowrate: 20,
-      max_flowrate: 280,
-      min_pressure: 0.5,
-      max_pressure: 8,
-      min_temperature: 18,
-      max_temperature: 95,
-      std_flowrate: 38,
-      std_pressure: 1.6,
-      std_temperature: 15,
-      type_distribution: {
-        pump: 4,
-        valve: 3,
-        reactor: 3,
-        compressor: 2,
-      },
-    }
+    const store = loadDemoStore()
+    const dataset = store.datasets.find(d => d.id === id)!
+    return computeSummary(dataset, store.records[id])
   },
 
   async getDataset(id: number): Promise<EquipmentDatasetDetail> {
-    const d = mockDatasets.find((x) => x.id === id)!
+    const store = loadDemoStore()
+    const dataset = store.datasets.find(d => d.id === id)!
+
     return {
-      ...d,
+      ...dataset,
       username: "demo",
-      records: generateMockRecords(),
+      records: store.records[id],
     }
   },
 }
 
-/* ===================== SMART UPLOAD (SAFE FALLBACK) ===================== */
+/* ===================== SMART UPLOAD (SAFE) ===================== */
 
 export async function uploadCSVSmart(file: File) {
   try {
     return await analyticsAPI.uploadCSV(file)
   } catch {
-    console.warn("⚠️ Backend unavailable → switching to demo mode")
+    console.warn("⚠ Backend unreachable → switching to demo")
     return mockAPI.uploadCSV(file)
   }
 }

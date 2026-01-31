@@ -1,0 +1,4 @@
+Equipment Name,Equipment Type,Flowrate,Pressure,Temperature
+Pump-A1,pump,120,3.2,45
+Pump-A2,pump,140,3.6,48
+Pump-A3,pump,160,4.0,52

@@ -1,0 +1,6 @@
+name,equipment_type,flowrate,pressure,temperature
+EQ-401,pump,125.7,3.3,46.8
+EQ-402,valve,92.4,2.2,37.9
+EQ-403,reactor,230.1,6.8,81.4
+EQ-404,compressor,165.6,5.0,57.6
+EQ-405,pump,138.9,3.8,49.7

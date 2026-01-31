@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   FileSpreadsheet,
   HelpCircle,
@@ -14,26 +14,28 @@ import {
   AlertTriangle,
   Server,
   Cpu,
-} from 'lucide-react'
-import { useDropzone } from 'react-dropzone'
+  Hash,
+} from "lucide-react"
+import { useDropzone } from "react-dropzone"
 
-import { analyticsAPI, mockAPI } from '@/services/api'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+import { analyticsAPI, mockAPI } from "@/services/api"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/accordion"
+import { cn } from "@/lib/utils"
 
 type UploadResult = {
   success: boolean
   message: string
+  datasetId?: number
   recordsProcessed?: number
   warnings?: string[]
-  mode?: 'backend' | 'demo'
+  mode?: "backend" | "demo"
 }
 
 const MAX_FILE_SIZE_MB = 5
@@ -48,20 +50,18 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
 
-  /**
-   * 🔥 SMART UPLOAD HANDLER (UPGRADED)
-   */
+  /* ===================== UPLOAD ===================== */
+
   const handleUpload = async (file: File) => {
     setValidationError(null)
 
-    // 🛡️ File validation
-    if (!file.name.endsWith('.csv')) {
-      setValidationError('Only CSV files are allowed.')
+    if (!file.name.endsWith(".csv")) {
+      setValidationError("Only CSV files are allowed.")
       return
     }
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      setValidationError(`File size must be under ${MAX_FILE_SIZE_MB}MB.`)
+      setValidationError(`File must be under ${MAX_FILE_SIZE_MB}MB.`)
       return
     }
 
@@ -71,17 +71,17 @@ export default function UploadPage() {
     setSelectedFile(file)
 
     const progressTimer = setInterval(() => {
-      setUploadProgress((p) => (p < 92 ? p + Math.random() * 10 : p))
-    }, 140)
+      setUploadProgress((p) => (p < 94 ? p + Math.random() * 8 : p))
+    }, 120)
 
     try {
       let response: any
-      let mode: 'backend' | 'demo' = 'backend'
+      let mode: "backend" | "demo" = "backend"
 
       try {
         response = await analyticsAPI.uploadCSV(file)
       } catch {
-        mode = 'demo'
+        mode = "demo"
         response = await mockAPI.uploadCSV(file)
       }
 
@@ -91,21 +91,23 @@ export default function UploadPage() {
       setUploadResult({
         success: true,
         message: response.message,
+        datasetId: response.dataset?.id,
         recordsProcessed:
           response.records_processed ?? response.recordsProcessed,
         warnings: response.warnings,
         mode,
       })
 
-      // ⏱ Auto redirect (UX polish)
-      redirectTimer.current = setTimeout(() => {
-        navigate('/dashboard')
-      }, 3500)
+      if (response.dataset?.id) {
+        redirectTimer.current = setTimeout(() => {
+          navigate(`/dashboard/${response.dataset.id}`)
+        }, 3000)
+      }
     } catch (error: any) {
       clearInterval(progressTimer)
       setUploadResult({
         success: false,
-        message: error?.message || 'Upload failed. Please try again.',
+        message: error?.message || "Upload failed",
       })
     } finally {
       setIsUploading(false)
@@ -122,31 +124,27 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => files[0] && handleUpload(files[0]),
-    accept: { 'text/csv': ['.csv'] },
+    accept: { "text/csv": [".csv"] },
     multiple: false,
     disabled: isUploading,
   })
 
+  /* ===================== RENDER ===================== */
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-4xl mx-auto space-y-10"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-10">
       {/* Header */}
-      <motion.div initial={{ y: -20 }} animate={{ y: 0 }}>
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Upload className="h-7 w-7 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Upload Dataset</h1>
-            <p className="text-muted-foreground">
-              Securely import your chemical equipment CSV
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Upload className="h-7 w-7 text-primary" />
         </div>
-      </motion.div>
+        <div>
+          <h1 className="text-3xl font-bold">Upload Dataset</h1>
+          <p className="text-muted-foreground">
+            Import chemical equipment data securely
+          </p>
+        </div>
+      </div>
 
       {/* Upload Zone */}
       <AnimatePresence mode="wait">
@@ -155,9 +153,9 @@ export default function UploadPage() {
             <div
               {...getRootProps()}
               className={cn(
-                'upload-zone p-10 text-center relative',
-                isDragActive && 'border-primary bg-primary/5',
-                isUploading && 'pointer-events-none'
+                "upload-zone p-10 text-center",
+                isDragActive && "border-primary bg-primary/5",
+                isUploading && "pointer-events-none"
               )}
             >
               <input {...getInputProps()} />
@@ -166,19 +164,15 @@ export default function UploadPage() {
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1.6, ease: 'linear' }}
+                    transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
                     className="mx-auto w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center"
                   >
                     <FileSpreadsheet className="h-8 w-8 text-primary" />
                   </motion.div>
 
                   <p className="mt-4 font-medium">{selectedFile?.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(selectedFile!.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-
                   <Progress value={uploadProgress} className="mt-4" />
-                  <p className="text-sm mt-1 text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {uploadProgress.toFixed(0)}%
                   </p>
                 </>
@@ -210,12 +204,7 @@ export default function UploadPage() {
             </div>
           </motion.div>
         ) : (
-          <motion.div
-            key="result"
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="glass-card p-10 text-center space-y-6"
-          >
+          <motion.div key="result" initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="glass-card p-10 text-center space-y-6">
             {uploadResult.success ? (
               <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
             ) : (
@@ -223,37 +212,41 @@ export default function UploadPage() {
             )}
 
             <h2 className="text-2xl font-bold">
-              {uploadResult.success ? 'Upload Complete' : 'Upload Failed'}
+              {uploadResult.success ? "Upload Complete" : "Upload Failed"}
             </h2>
 
             <p className="text-muted-foreground">{uploadResult.message}</p>
 
-            {uploadResult.recordsProcessed && (
-              <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full text-primary">
-                <Sparkles className="h-4 w-4" />
-                {uploadResult.recordsProcessed} records processed
+            {uploadResult.datasetId && (
+              <div className="inline-flex items-center gap-2 bg-muted px-4 py-2 rounded-full text-sm">
+                <Hash className="h-4 w-4" />
+                Dataset ID: {uploadResult.datasetId}
               </div>
             )}
 
-            {uploadResult.mode && (
-              <div className="flex justify-center gap-2 text-xs text-muted-foreground">
-                {uploadResult.mode === 'backend' ? (
-                  <>
-                    <Server className="h-4 w-4" /> Backend processed
-                  </>
-                ) : (
-                  <>
-                    <Cpu className="h-4 w-4" /> Demo mode
-                  </>
-                )}
-              </div>
-            )}
+            <div className="flex justify-center gap-2 text-xs text-muted-foreground">
+              {uploadResult.mode === "backend" ? (
+                <>
+                  <Server className="h-4 w-4" /> Backend processed
+                </>
+              ) : (
+                <>
+                  <Cpu className="h-4 w-4" /> Demo mode
+                </>
+              )}
+            </div>
 
             <div className="flex justify-center gap-3 pt-4">
               {uploadResult.success ? (
                 <>
-                  <Button onClick={() => navigate('/dashboard')}>
-                    Go to Dashboard
+                  <Button
+                    onClick={() =>
+                      uploadResult.datasetId
+                        ? navigate(`/dashboard/${uploadResult.datasetId}`)
+                        : navigate("/history")
+                    }
+                  >
+                    View Dashboard
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                   <Button variant="outline" onClick={handleReset}>

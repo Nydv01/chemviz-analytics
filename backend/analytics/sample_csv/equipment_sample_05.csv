@@ -1,0 +1,6 @@
+name,equipment_type,flowrate,pressure,temperature
+EQ-501,pump,140.2,4.1,51.3
+EQ-502,valve,97.8,2.6,39.2
+EQ-503,reactor,250.9,7.5,88.0
+EQ-504,compressor,180.4,5.7,62.9
+EQ-505,pump,150.0,4.5,54.6

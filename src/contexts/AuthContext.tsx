@@ -1,11 +1,3 @@
-/**
- * Authentication Context – Production Grade (FIXED)
- *
- * ✔ Django session auth
- * ✔ Clean demo fallback
- * ✔ No phantom API calls
- * ✔ Zero TypeScript errors
- */
 
 import React, {
   createContext,
@@ -33,12 +25,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-/* ===================== Demo User ===================== */
+/* ===================== Demo User (TEMPORARY ONLY) ===================== */
 
 const DEMO_USER: User = {
-  id: 0,
+  id: -1,
   username: "demo",
-  email: "demo@chemical-lab.edu",
+  email: "demo@chemviz.app",
   first_name: "Demo",
   last_name: "User",
 }
@@ -48,43 +40,63 @@ const DEMO_USER: User = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  /**
+   * 🚨 IMPORTANT:
+   * Demo mode is RUNTIME ONLY
+   * It NEVER survives browser reload
+   */
   const [isDemoMode, setIsDemoMode] = useState(false)
 
-  /* ---------- Bootstrap Session ---------- */
+  /* ===================== Session Bootstrap ===================== */
+
   useEffect(() => {
-    const initAuth = async () => {
+    let isMounted = true
+
+    const bootstrapAuth = async () => {
       try {
         const res = await authAPI.getCurrentUser()
+
+        if (!isMounted) return
+
         setUser(res.user)
         setIsDemoMode(false)
       } catch {
-        // fallback to demo if exists
-        if (localStorage.getItem("demo_session") === "true") {
-          setUser(DEMO_USER)
-          setIsDemoMode(true)
-        }
+        
+        if (!isMounted) return
+        setUser(null)
+        setIsDemoMode(false)
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
     }
 
-    initAuth()
+    bootstrapAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  /* ---------- Login ---------- */
+  /* ===================== Login ===================== */
+
   const login = useCallback(async (username: string, password: string) => {
     try {
       const res = await authAPI.login(username, password)
       setUser(res.user)
       setIsDemoMode(false)
-      localStorage.removeItem("demo_session")
+      return
     } catch (error: any) {
-      const networkFail =
+      /**
+       * ✅ Demo mode allowed ONLY if:
+       * - user explicitly logs in as demo
+       * - backend is unreachable
+       */
+      const networkFailure =
         error?.message?.includes("Failed to fetch") ||
         error?.message?.includes("NetworkError")
 
-      if (username === "demo" && password === "demo" && networkFail) {
-        localStorage.setItem("demo_session", "true")
+      if (username === "demo" && password === "demo" && networkFailure) {
         setUser(DEMO_USER)
         setIsDemoMode(true)
         return
@@ -94,22 +106,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  /* ---------- Logout ---------- */
+  /* ===================== Logout ===================== */
+
   const logout = useCallback(async () => {
     try {
       if (!isDemoMode) {
         await authAPI.logout()
       }
     } catch {
-      // ignore logout errors
+      // ignore backend logout failure
     } finally {
-      localStorage.removeItem("demo_session")
       setUser(null)
       setIsDemoMode(false)
     }
   }, [isDemoMode])
 
-  /* ---------- Context Value ---------- */
+  /* ===================== Context Value ===================== */
+
   const value: AuthContextType = {
     user,
     isAuthenticated: Boolean(user),
