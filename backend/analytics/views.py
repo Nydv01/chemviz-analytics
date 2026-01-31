@@ -299,17 +299,17 @@ class UploadHistoryView(APIView):
 
 class PDFReportView(APIView):
     authentication_classes = []      
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+
     """
     GET /api/report/<dataset_id>/
 
     Behavior:
     ✔ Dataset exists → generate fresh PDF
     ✔ Dataset missing → serve permanent demo PDF
-    ✔ Never throws frontend-breaking error
+    ✔ Always downloadable
+    ✔ NO AUTH REQUIRED
     """
-
-    permission_classes = [IsAuthenticated]
 
     def get(self, request, dataset_id):
         demo_pdf_path = get_demo_pdf_path()
@@ -334,15 +334,25 @@ class PDFReportView(APIView):
             filename = f"Equipment_Report_{safe_name}_{dataset.id}.pdf"
 
             logger.info(
-                f"PDF generated | dataset={dataset.id} | user={request.user.username}"
+                f"PDF generated | dataset={dataset.id}"
             )
 
             return build_pdf_response(pdf_bytes, filename)
 
         except EquipmentDataset.DoesNotExist:
-            logger.info(
-                f"Dataset missing → serving demo PDF | user={request.user.username}"
-            )
+            logger.info("Dataset missing → serving demo PDF")
+
+        # ---------- Demo fallback ----------
+        if not os.path.exists(demo_pdf_path):
+            raise Http404("Demo report not available")
+
+        return FileResponse(
+            open(demo_pdf_path, "rb"),
+            as_attachment=True,
+            filename="ChemViz_Demo_Report.pdf",
+            content_type="application/pdf",
+        )
+
 
         # ---------- Demo fallback ----------
         if not os.path.exists(demo_pdf_path):
