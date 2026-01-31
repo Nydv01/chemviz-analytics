@@ -298,51 +298,56 @@ class UploadHistoryView(APIView):
 # =====================================================================
 
 class PDFReportView(APIView):
-    authentication_classes = []      
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     """
-    GET /api/report/<dataset_id>/
+    Public PDF download endpoint
 
-    Behavior:
-    ✔ Dataset exists → generate fresh PDF
-    ✔ Dataset missing → serve permanent demo PDF
-    ✔ Always downloadable
-    ✔ NO AUTH REQUIRED
+    ✔ Logged-in user → real dataset PDF
+    ✔ Anonymous user → demo PDF
+    ✔ NEVER fails frontend
     """
 
     def get(self, request, dataset_id):
         demo_pdf_path = get_demo_pdf_path()
 
-        # ---------- Attempt real dataset ----------
-        try:
-            dataset = EquipmentDataset.objects.get(
-                id=dataset_id,
-                user=request.user,
-            )
+        # ================================
+        # AUTHENTICATED USER → REAL PDF
+        # ================================
+        if request.user.is_authenticated:
+            try:
+                dataset = EquipmentDataset.objects.get(
+                    id=dataset_id,
+                    user=request.user,
+                )
 
-            summary = AnalyticsService.get_dataset_summary(dataset)
-            pdf_bytes = PDFReportGenerator(dataset, summary).generate()
+                summary = AnalyticsService.get_dataset_summary(dataset)
+                pdf_bytes = PDFReportGenerator(dataset, summary).generate()
 
-            safe_name = (
-                dataset.filename
-                .replace(" ", "_")
-                .replace(".csv", "")
-                .replace("/", "_")
-            )
+                safe_name = (
+                    dataset.filename
+                    .replace(" ", "_")
+                    .replace(".csv", "")
+                    .replace("/", "_")
+                )
 
-            filename = f"Equipment_Report_{safe_name}_{dataset.id}.pdf"
+                filename = f"Equipment_Report_{safe_name}_{dataset.id}.pdf"
 
-            logger.info(
-                f"PDF generated | dataset={dataset.id}"
-            )
+                logger.info(
+                    f"PDF generated | dataset={dataset.id} | user={request.user.username}"
+                )
 
-            return build_pdf_response(pdf_bytes, filename)
+                return build_pdf_response(pdf_bytes, filename)
 
-        except EquipmentDataset.DoesNotExist:
-            logger.info("Dataset missing → serving demo PDF")
+            except EquipmentDataset.DoesNotExist:
+                logger.info(
+                    "Dataset not found for user → serving demo PDF"
+                )
 
-        # ---------- Demo fallback ----------
+        # ================================
+        # ANONYMOUS OR FALLBACK → DEMO PDF
+        # ================================
         if not os.path.exists(demo_pdf_path):
             raise Http404("Demo report not available")
 
@@ -352,20 +357,6 @@ class PDFReportView(APIView):
             filename="ChemViz_Demo_Report.pdf",
             content_type="application/pdf",
         )
-
-
-        # ---------- Demo fallback ----------
-        if not os.path.exists(demo_pdf_path):
-            logger.error("Demo PDF missing from filesystem")
-            raise Http404("Demo report not available")
-
-        return FileResponse(
-            open(demo_pdf_path, "rb"),
-            as_attachment=True,
-            filename="ChemViz_Demo_Report.pdf",
-            content_type="application/pdf",
-        )
-
 
 # =====================================================================
 # HEALTH CHECK
