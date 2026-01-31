@@ -56,3 +56,4 @@ gunicorn
 pandas
 psycopg2-binary
 python-dotenv
+django-cors-headers==4.3.1
