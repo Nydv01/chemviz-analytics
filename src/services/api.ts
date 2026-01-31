@@ -23,7 +23,7 @@ export type AnalyticsAPI = {
 /* ===================== CONFIG ===================== */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000"
 
 const DEMO_STORAGE_KEY = "chemviz_demo_store"
 const API_MODE_KEY = "chemviz_api_mode" // backend | demo
@@ -120,7 +120,7 @@ export const analyticsAPI: AnalyticsAPI = {
     api<void>(`/dataset/${id}/`, { method: "DELETE" }),
 
   getReportUrl: (id: number) => {
-  return `${import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"}/api/report/${id}/`
+  return `${import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"}/report/${id}/`
 },
 
 
